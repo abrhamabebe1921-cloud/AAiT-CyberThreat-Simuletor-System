@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT – Low Level Lab</title>
+    <link rel="stylesheet" href="/static/css/style_v4.css">
+    <style>
+        body {
+            background: #050510;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 80px auto;
+            padding: 30px;
+            background: rgba(10, 10, 15, 0.7);
+            border-radius: 12px;
+            backdrop-filter: blur(12px);
+        }
+
+        .title {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .source {
+            background: #111;
+            padding: 15px;
+            border-left: 4px solid #0f0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            overflow: auto;
+            max-height: 300px;
+        }
+
+        .output {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.4);
+            color: #00ff88;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .flag {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.6);
+            color: #ffd700;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        button {
+            margin-top: 12px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #eee 0%, #aaa 100%);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="brand">ThreatMapper Labs</div><a href="/dashboard">← Back</a>
+    </nav>
+    <div class="container">
+        <h1 class="title">JWT – Low Level Lab <span>Role: {{ role|default('guest') }}</span></h1>
+        <p>This lab demonstrates the <code>alg=none</code> JWT vulnerability. The PHP source below is intentionally
+            insecure.</p>
+        <div class="source">
+            <?php
+/**
+ * Intentionally vulnerable JWT lab:
+ * - Normal flow issues HS256 tokens.
+ * - HS256 tampering => 403 (signature check fails).
+ * - If attacker changes header.alg to "none" => signature is NOT verified (accepted).
+ */
+// ... (source truncated for brevity) ...
+?>
+        </div>
+        <hr />
+        <h2>Interact</h2>
+        <p>Current <code>jwt</code> cookie (if any):</p>
+        <div class="output"><strong>Token:</strong> {{ token|default('None') }}</div>
+        {% if payload %}
+        <div class="output"><strong>Decoded payload (no verification):</strong><br>{{ payload }}</div>
+        {% endif %}
+        {% if flag_output %}
+        <div class="flag">FLAG: {{ flag_output }}</div>
+        {% endif %}
+        <p>To exploit, set a JWT cookie with <code>alg=none</code> and a payload where <code>role</code> is
+            <code>admin</code>. The lab will accept it and reveal the flag.</p>
+    </div>
+</body>
+
+</html>

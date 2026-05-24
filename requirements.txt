@@ -1,0 +1,4 @@
+flask
+flask-socketio
+fpdf2
+google-generativeai

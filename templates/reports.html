@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style_v4.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <title>Reports — ThreatMapper</title>
+    <style>
+        /* Modern Colorful Dashboard Aesthetic */
+        :root {
+            --bg-deep: #050508;
+            --panel-bg: rgba(20, 20, 28, 0.7);
+            --panel-border: rgba(0, 255, 200, 0.15);
+            --glow-cyan: #00e5ff;
+            --glow-magenta: #ff007f;
+            --glow-purple: #b000ff;
+            --neon-green: #00ff88;
+            --neon-orange: #ff6a00;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(0, 229, 255, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(255, 0, 127, 0.04) 0%, transparent 50%);
+            margin: 0;
+            padding: 0;
+            color: #fff;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .main-content {
+            padding: 30px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* KPI Quick Stats Row */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--glow-cyan), var(--glow-purple));
+        }
+
+        .kpi-card:nth-child(2)::before {
+            background: linear-gradient(90deg, var(--glow-magenta), var(--neon-orange));
+        }
+
+        .kpi-card:nth-child(3)::before {
+            background: linear-gradient(90deg, #ff1744, #ff8a65);
+        }
+
+        .kpi-card:nth-child(4)::before {
+            background: linear-gradient(90deg, #ff9100, #ffd740);
+        }
+
+        .kpi-title {
+            font-size: 13px;
+            color: #8fa0b5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 36px;
+            font-weight: 800;
+            margin-top: 10px;
+            font-family: monospace;
+            background: linear-gradient(to right, #ffffff, #a0aec0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Chart Grid Layout */
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .report-panel {
+            background: linear-gradient(180deg, rgba(20, 20, 30, 0.8), rgba(10, 10, 15, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .report-panel-header {
+            font-size: 16px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .report-panel-header .icon {
+            font-size: 20px;
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        .chart-wrapper {
+            height: 280px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* History Table Styling */
+        .history-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .history-panel-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .history-table-container {
+            overflow-x: auto;
+        }
+
+        .premium-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .premium-table th {
+            padding: 16px 24px;
+            color: #8fa0b5;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .premium-table td {
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: #e2e8f0;
+            transition: background 0.2s;
+        }
+
+        .premium-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Topbar Controls */
+        .report-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .styled-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #fff;
+            font-family: monospace;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        .styled-input:focus {
+            outline: none;
+            border-color: var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        /* Custom badging for colors */
+        .sev-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .sev-crit {
+            background: rgba(255, 23, 68, 0.15);
+            color: #ff1744;
+            border: 1px solid rgba(255, 23, 68, 0.3);
+        }
+
+        .sev-high {
+            background: rgba(255, 106, 0, 0.15);
+            color: #ff6a00;
+            border: 1px solid rgba(255, 106, 0, 0.3);
+        }
+
+        .sev-med {
+            background: rgba(255, 204, 0, 0.15);
+            color: #ffcc00;
+            border: 1px solid rgba(255, 204, 0, 0.3);
+        }
+
+        .sev-low {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-icon" style="filter: drop-shadow(0 0 10px #00ff88);">🛡️</span>
+                <div>
+                    <h2 style="color: #fff; letter-spacing: 1px;">THREATMAPPER</h2>
+                    <span class="version" style="color: #00ff88;">v2.0 Security Platform</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="/dashboard" class="nav-item"><span class="icon">📊</span> Dashboard</a>
+                    <a href="/reports" class="nav-item active"
+                        style="background: rgba(0,255,136,0.1); border-left: 3px solid #00ff88; color:#fff;"><span
+                            class="icon">📋</span> Intelligence Reports</a>
+                    <a href="/terminal" class="nav-item"><span class="icon">💻</span> Terminal</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">{{ username[0]|upper }}</div>
+                    <div class="user-details">
+                        <div class="name">{{ username }}</div>
+                        <span class="role-badge role-{{ role }}">{{ role }}</span>
+                    </div>
+                </div>
+                <a href="/logout" class="btn btn-secondary btn-sm" style="width:100%;text-align:center;">🚪 Logout</a>
+            </div>
+        </aside>
+
+        <!-- Topbar -->
+        <div class="topbar"
+            style="border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(10,10,15,0.8); backdrop-filter: blur(20px);">
+            <div class="topbar-title">
+                <span style="color:var(--glow-cyan);">●</span> Executive Security Reports
+            </div>
+            <div class="report-controls">
+                <input type="url" id="targetUrl" class="styled-input" placeholder="https://target.local"
+                    style="width:160px;" />
+                <input type="file" id="subdomainsFile" accept=".txt" class="styled-input"
+                    style="width:180px; padding: 5px;" />
+                <button class="btn btn-success btn-sm" onclick="handleSubdomains()"
+                    style="box-shadow: 0 0 15px rgba(0,255,136,0.3);">🚀 Ingest</button>
+                <div style="width:1px; height:20px; background:rgba(255,255,255,0.1); margin: 0 6px;"></div>
+                <button class="btn btn-primary btn-sm" onclick="exportLatestPDF()"
+                    style="background: var(--glow-purple); border-color: var(--glow-purple); box-shadow: 0 0 15px rgba(176,0,255,0.3);">📄
+                    Export PDF</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <!-- KPI Summary Row -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-title">Total Targets Scanned</div>
+                    <div class="kpi-value" id="kpiTargets">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Total Vulnerabilities</div>
+                    <div class="kpi-value" id="kpiVulns">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title" style="color: #ff4d4d;">Critical Threats</div>
+                    <div class="kpi-value" id="kpiCritical" style="color: #ff1744; -webkit-text-fill-color: #ff1744;">0
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title" style="color: #ffb74d;">High Severity</div>
+                    <div class="kpi-value" id="kpiHigh" style="color: #ff9100; -webkit-text-fill-color: #ff9100;">0
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="report-grid">
+                <div class="report-panel">
+                    <div class="report-panel-header">
+                        <span class="icon" style="color:var(--glow-magenta);">📊</span> Threat Distribution
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="severityChart"></canvas>
+                    </div>
+                </div>
+                <div class="report-panel">
+                    <div class="report-panel-header">
+                        <span class="icon" style="color:var(--glow-cyan);">🎯</span> OWASP Top 10 Surface
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="owaspChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 2 -->
+            <div class="report-grid">
+                <div class="report-panel">
+                    <div class="report-panel-header">
+                        <span class="icon" style="color:var(--glow-purple);">📈</span> Threat Evolution Timeline
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+                <div class="report-panel">
+                    <div class="report-panel-header">
+                        <span class="icon" style="color:var(--neon-green);">🌐</span> Attack Surface Distribution
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="hostChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remediation Suggestions Panel -->
+            <div class="history-panel" style="margin-bottom: 30px;">
+                <div class="history-panel-header">
+                    <div><span style="color: var(--neon-orange); margin-right:8px;">💡</span> Remediation & Strategy
+                        Suggestions</div>
+                </div>
+                <div style="padding: 24px;" id="remediationSuggestions">
+                    <p style="color:#8fa0b5; font-size:14px; margin: 0;">Generating strategic advisory based on recent
+                        vulnerabilities...</p>
+                </div>
+            </div>
+
+            <!-- Full History Table -->
+            <div class="history-panel">
+                <div class="history-panel-header">
+                    <div><span style="color: #00ff88; margin-right:8px;">●</span> Operations Ledger</div>
+                </div>
+                <div class="history-table-container">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Operator</th>
+                                <th>Target Scope</th>
+                                <th>Engine Profile</th>
+                                <th>Issues Found</th>
+                                <th>Critical</th>
+                                <th>High</th>
+                                <th>Medium</th>
+                                <th>Low</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Chart.js global defaults for dark theme
+        Chart.defaults.color = '#8fa0b5';
+        Chart.defaults.font.family = 'monospace';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+
+        let scanHistoryData = [];
+        let allFindings = [];
+
+        function animateNumber(id, target) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let current = 0;
+            const step = Math.max(1, Math.ceil(target / 20));
+            const interval = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(interval);
+                }
+                el.textContent = current;
+            }, 30);
+        }
+
+        async function loadReportData() {
+            const [statsRes, historyRes] = await Promise.all([
+                fetch('/api/stats'),
+                fetch('/api/scan-history')
+            ]);
+            const stats = await statsRes.json();
+            scanHistoryData = await historyRes.json();
+
+            allFindings = [];
+            let uniqueTargets = new Set();
+
+            scanHistoryData.forEach(s => {
+                uniqueTargets.add(s.target);
+                try {
+                    const findings = JSON.parse(s.results || '[]');
+                    allFindings.push(...findings);
+                } catch (e) { }
+            });
+
+            // Populate KPIs
+            animateNumber('kpiTargets', uniqueTargets.size);
+            animateNumber('kpiVulns', allFindings.length);
+            animateNumber('kpiCritical', stats.severity.critical);
+            animateNumber('kpiHigh', stats.severity.high);
+
+            // Render Modules
+            renderSeverityChart(stats.severity);
+            renderOwaspChart(allFindings);
+            renderTrendChart(scanHistoryData);
+            renderHostChart(allFindings);
+            renderHistoryTable(scanHistoryData);
+            renderRemediationSuggestions(allFindings);
+        }
+
+        function renderSeverityChart(severity) {
+            const ctx = document.getElementById('severityChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+                    datasets: [{
+                        data: [severity.critical, severity.high, severity.medium, severity.low, severity.info],
+                        backgroundColor: [
+                            'rgba(255, 23, 68, 0.85)',
+                            'rgba(255, 106, 0, 0.85)',
+                            'rgba(255, 204, 0, 0.85)',
+                            'rgba(0, 255, 136, 0.85)',
+                            'rgba(0, 229, 255, 0.85)'
+                        ],
+                        borderColor: '#101018',
+                        borderWidth: 4,
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { padding: 20, usePointStyle: true, boxWidth: 10 } }
+                    },
+                    cutout: '72%'
+                }
+            });
+        }
+
+        function renderOwaspChart(findings) {
+            const categories = {};
+            findings.forEach(f => {
+                const cat = f.owasp || 'Unknown';
+                categories[cat] = (categories[cat] || 0) + 1;
+            });
+            const labels = Object.keys(categories);
+            const data = Object.values(categories);
+
+            const ctx = document.getElementById('owaspChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.map(l => l.length > 25 ? l.substring(0, 25) + '...' : l),
+                    datasets: [{
+                        label: 'Findings',
+                        data: data,
+                        backgroundColor: 'rgba(0, 229, 255, 0.25)',
+                        borderColor: 'rgba(0, 229, 255, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: true },
+                        y: { display: true }
+                    }
+                }
+            });
+        }
+
+        function renderTrendChart(history) {
+            // Group by date
+            const dates = {};
+            history.forEach(s => {
+                const d = (s.created_at || '').split(' ')[0] || 'Unknown';
+                if (!dates[d]) dates[d] = { cr: 0, hi: 0 };
+                dates[d].cr += s.critical || 0;
+                dates[d].hi += s.high || 0;
+            });
+            const labels = Object.keys(dates).reverse(); // Oldest to newest
+            if (labels.length === 0) return;
+
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Critical', data: labels.map(l => dates[l].cr),
+                            borderColor: '#ff1744', backgroundColor: 'rgba(255, 23, 68, 0.1)',
+                            fill: true, tension: 0.4, borderWidth: 2, pointRadius: 4
+                        },
+                        {
+                            label: 'High', data: labels.map(l => dates[l].hi),
+                            borderColor: '#ff6a00', backgroundColor: 'rgba(255, 106, 0, 0.1)',
+                            fill: true, tension: 0.4, borderWidth: 2, pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { usePointStyle: true } } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function renderHostChart(findings) {
+            const hosts = {};
+            findings.forEach(f => {
+                hosts[f.host] = (hosts[f.host] || 0) + 1;
+            });
+
+            const ctx = document.getElementById('hostChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'polarArea',
+                data: {
+                    labels: Object.keys(hosts),
+                    datasets: [{
+                        data: Object.values(hosts),
+                        backgroundColor: [
+                            'rgba(0, 255, 136, 0.4)',
+                            'rgba(0, 229, 255, 0.4)',
+                            'rgba(176, 0, 255, 0.4)',
+                            'rgba(255, 0, 127, 0.4)',
+                            'rgba(255, 106, 0, 0.4)'
+                        ],
+                        borderColor: '#101018',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { usePointStyle: true } } },
+                    scales: { r: { ticks: { display: false } } }
+                }
+            });
+        }
+
+        function renderHistoryTable(history) {
+            const tbody = document.getElementById('historyBody');
+            if (!history.length) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#8fa0b5;padding:30px;">No simulated operations recorded.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = history.map(s => `
+                <tr>
+                    <td style="font-family:monospace; color:#8fa0b5;">${s.created_at || '—'}</td>
+                    <td><div style="display:flex;align-items:center;gap:8px;"><div style="width:20px;height:20px;border-radius:50%;background:var(--glow-purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;">${(s.username || 'S')[0].toUpperCase()}</div> ${s.username || 'System'}</div></td>
+                    <td style="font-family:monospace; color:var(--glow-cyan);">${s.target || '—'}</td>
+                    <td><span style="background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);">${s.scan_type || '—'}</span></td>
+                    <td style="font-family:monospace; font-weight:800; font-size:14px; text-align:center">${s.findings_count || 0}</td>
+                    <td><span class="sev-pill sev-crit">${s.critical || 0}</span></td>
+                    <td><span class="sev-pill sev-high">${s.high || 0}</span></td>
+                    <td><span class="sev-pill sev-med">${s.medium || 0}</span></td>
+                    <td><span class="sev-pill sev-low">${s.low || 0}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        const REMEDIATION_MAP = {
+            'XSS Reflected': 'Implement strict context-aware output encoding. Sanitize all user inputs before reflecting them back in the browser.',
+            'SQL Injection (Error-Based)': 'Use parameterized queries (Prepared Statements) or ORM frameworks to separate SQL code from user-supplied data. Disable detailed database error messages.',
+            'SQL Injection (Boolean-Based)': 'Switch to Prepared Statements and thoroughly validate inputs. Avoid dynamic SQL queries.',
+            'SQL Injection (Time-Based)': 'Utilize parameterized queries. Ensure any sleep() type functions cannot be influenced by user parameters.',
+            'Directory Traversal': 'Validate file paths safely using absolute path resolution and restricting file access to a specific directory. Avoid using user input directly in filesystem APIs.',
+            'Path Traversal': 'Sanitize file paths. Strip directory traversal strings like "../" and resolve the path to ensure it belongs to the intended directory.',
+            'Missing Content-Security-Policy': 'Implement a strict CSP header to prevent cross-site scripting, clickjacking, and other data injection attacks.',
+            'Missing X-Frame-Options': 'Configure the X-Frame-Options header (e.g., DENY or SAMEORIGIN) to protect against Clickjacking.',
+            'Missing HSTS Header': 'Enable HTTP Strict Transport Security (HSTS) ensuring browsers only connect to the site via HTTPS.',
+            'Missing X-Content-Type-Options': 'Set X-Content-Type-Options to nosniff config to prevent browsers from MIME-sniffing the response.',
+            'Missing Referrer-Policy': 'Use a Referrer-Policy (like strict-origin-when-cross-origin) to control how much referrer information is sent with requests.',
+            'Server Version Exposed': 'Configure the web server to suppress banners and version numbers (e.g., ServerTokens Prod in Apache).',
+            'Command Injection': 'Avoid calling OS commands directly via shell scripts. Use language-specific safe APIs and rigorously validate input against a strict allowlist.',
+            'SSTI (Template Injection)': 'Use logic-less templates if possible, or sandboxed environments for template evaluation. Prevent user input from being evaluated as template code.',
+            'IDOR (Insecure Direct Object Ref)': 'Implement robust object-level access controls. Check the user’s authorization explicitly before providing access to the requested resource ID.',
+            'Open Redirect': 'Disallow redirects to user-supplied URLs. If required, validate against a strict whitelist of approved domains/paths.',
+            'BOLA (Broken Object Level Auth)': 'Enforce strict authorization checks for every API endpoint touching resources. Verify the logged-in user owns or has rights to the specific resource ID.'
+        };
+
+        function renderRemediationSuggestions(findings) {
+            const container = document.getElementById('remediationSuggestions');
+            if (!container) return;
+            if (!findings || !findings.length) {
+                container.innerHTML = '<p style="color:#8fa0b5; font-size:14px; margin: 0;">No active threats found requiring remediation.</p>';
+                return;
+            }
+
+            const uniqueIssues = [...new Set(findings.map(f => f.issue))].slice(0, 9); // top 9 issues showing up
+            if (uniqueIssues.length === 0) return;
+
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">';
+            uniqueIssues.forEach(issue => {
+                const suggestion = REMEDIATION_MAP[issue] || 'Review the application code and environment configuration, ensuring strict input validation, least privilege, and defense-in-depth principles.';
+                html += `
+                    <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 3px solid var(--neon-orange); border-radius: 6px; padding: 16px; transition: transform 0.2s;">
+                        <div style="font-weight: 700; color: #e2e8f0; margin-bottom: 8px; font-size: 14px;">${issue}</div>
+                        <div style="color: #8fa0b5; font-size: 13px; line-height: 1.5;">${suggestion}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        async function exportLatestPDF() {
+            if (!allFindings.length) {
+                alert('No threat intelligence available for export.');
+                return;
+            }
+            const res = await fetch('/api/export-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ findings: allFindings })
+            });
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ThreatMapper_Executive_Report.pdf';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        async function handleSubdomains() {
+            const url = document.getElementById('targetUrl').value.trim();
+            const fileInput = document.getElementById('subdomainsFile');
+            if (fileInput.files.length > 0) {
+                // Future integration to directly submit to scanner UI or handle here.
+                alert('Subdomain intelligence ingested. Please return to the dashboard to initiate the scan profile.');
+            } else {
+                alert('Please provide a target .txt file containing the surface array.');
+            }
+        }
+
+        loadReportData();
+    </script>
+</body>
+
+</html>

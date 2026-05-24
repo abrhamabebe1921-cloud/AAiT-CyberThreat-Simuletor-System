@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style_v4.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.css" />
+    <title>Terminal — ThreatMapper</title>
+</head>
+
+<body>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-icon">🛡️</span>
+                <div>
+                    <h2>THREATMAPPER</h2>
+                    <span class="version">v2.0 Security Platform</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="/dashboard" class="nav-item"><span class="icon">📊</span> Dashboard</a>
+                    <a href="/reports" class="nav-item"><span class="icon">📋</span> Reports</a>
+                    <a href="/terminal" class="nav-item active"><span class="icon">💻</span> Terminal</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">{{ username[0]|upper }}</div>
+                    <div class="user-details">
+                        <div class="name">{{ username }}</div>
+                        <span class="role-badge role-{{ role }}">{{ role }}</span>
+                    </div>
+                </div>
+                <a href="/logout" class="btn btn-secondary btn-sm" style="width:100%;text-align:center;">🚪 Logout</a>
+            </div>
+        </aside>
+
+        <div class="topbar">
+            <div class="topbar-title">💻 Live Terminal</div>
+            <div class="topbar-actions">
+                <span style="font-size:12px;color:var(--text-muted);">Session Active</span>
+                <div class="status-dot"></div>
+            </div>
+        </div>
+
+        <div class="main-content" style="padding:20px;">
+            <div class="terminal-container">
+                <div class="terminal-header">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">threatmapper@security:~$</span>
+                </div>
+                <div class="terminal-body" id="terminalOutput"
+                    style="padding: 10px; height: 500px; overflow: hidden; background: #000;">
+                    <!-- Xterm container -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/fit/fit.js"></script>
+    <script>
+        Terminal.applyAddon(fit);
+        const socket = io();
+
+        const term = new Terminal({
+            theme: {
+                background: '#000000',
+                foreground: '#00ff88',
+                cursor: '#e2e8f0'
+            },
+            fontFamily: 'monospace',
+            cursorBlink: true
+        });
+
+        term.open(document.getElementById('terminalOutput'));
+        term.fit(); // Automatically resize terminal to the div container bounds
+        window.addEventListener('resize', () => { term.fit(); });
+
+        term.writeln('\\x1b[1;32mThreatMapper Terminal v2.0\\x1b[0m');
+        term.writeln('\\x1b[1;30mInteractive Shell Started - Type commands naturally\\x1b[0m');
+        term.writeln('───────────────────────────────────────────────────');
+
+        // Request backend to start PTY process
+        socket.emit('terminal_start');
+
+        // When data comes from bash process, write to xterm
+        socket.on('terminal_output', (data) => {
+            term.write(data.data);
+            term.scrollToBottom(); // Automatically scroll down!
+        });
+
+        // When user types, send via websocket instantly to bash PTY
+        if (term.onData) {
+            term.onData(function (data) {
+                socket.emit('terminal_input', { input: data });
+            });
+        } else {
+            term.on('data', function (data) {
+                socket.emit('terminal_input', { input: data });
+            });
+        }
+    </script>
+</body>
+
+</html>

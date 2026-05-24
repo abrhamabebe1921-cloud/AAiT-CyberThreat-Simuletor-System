@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Info — ThreatMapper</title>
+    <link rel="stylesheet" href="/static/css/style_v4.css">
+    <style>
+        .info-box {
+            max-width: 600px;
+            margin: 80px auto;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 12px;
+            color: #e0e0e0;
+        }
+
+        .info-box h2 {
+            font-family: 'JetBrains Mono', monospace;
+            color: #00ff88;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-table th,
+        .info-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+        }
+
+        .info-table th {
+            text-align: left;
+            color: #00ffcc;
+        }
+
+        .info-table td {
+            color: #e0e0e0;
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            color: #00ff88;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="info-box">
+        <h2>Private Information</h2>
+        {% if info %}
+        <table class="info-table">
+            <tr>
+                <th>ID</th>
+                <td>{{ info.id }}</td>
+            </tr>
+            <tr>
+                <th>Username</th>
+                <td>{{ info.username }}</td>
+            </tr>
+            <tr>
+                <th>Gender</th>
+                <td>{{ info.gender }}</td>
+            </tr>
+            <tr>
+                <th>Bank Account</th>
+                <td>{{ info.bank_account }}</td>
+            </tr>
+            <tr>
+                <th>Password</th>
+                <td>{{ info.password }}</td>
+            </tr>
+        </table>
+        {% else %}
+        <p>No private data available.</p>
+        {% endif %}
+        <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+    </div>
+</body>
+
+</html>

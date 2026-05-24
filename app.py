@@ -23,8 +23,16 @@ from modules.report_gen import generate_pdf_report
 app = Flask(__name__)
 app.config['SESSION_COOKIE_HTTPONLY'] = False
 app.secret_key = 'threatmapper-secret-2026'
-socketio = SocketIO(app, cors_allowed_origins='*', async_mode='threading')
 
+socketio = SocketIO(
+    app,
+    cors_allowed_origins='*',
+    async_mode='threading'
+)
+
+@app.route("/")
+def home():
+    return "ThreatMapper Backend Running Successfully"
 # Initialize the database
 init_db()
 

@@ -25,7 +25,7 @@ except ImportError:
 
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') or os.environ.get(
-    'GOOGLE_API_KEY', 'AIzaSyCV4LpeCKf91aRJq54sKOUF9vD5vLi7hCw')
+    'GOOGLE_API_KEY', 'hidden')
 
 # ── System Prompt (applied to every conversation) ───────────────
 SYSTEM_PROMPT = (
